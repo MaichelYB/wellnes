@@ -356,7 +356,7 @@ class Table extends Component {
                   } 
                     )}
               </table>
-              <br/><br/>
+              <br/>
               <h1>Confirmed</h1>
               <table>
                 <tr>
