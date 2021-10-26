@@ -1,4 +1,4 @@
-const parentURL = 'http://localhost:8000'
+const parentURL = 'https://warm-sea-79866.herokuapp.com/'
 module.exports = {
   parentURL
 }
