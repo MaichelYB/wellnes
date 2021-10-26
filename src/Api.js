@@ -21,7 +21,6 @@ class App extends Component {
         const { data } = this.state;
 
         const result = data.map((entry, index) => {
-            console.log(entry);
             return <li key={index}>{entry}</li>;
         });
 

@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import InputField from './components/inputField';
-import userStore from '../store/userStore';
 import SubmitButton from './components/submitButton';
 import { parentURL } from '../global/constants';
 
@@ -13,7 +12,8 @@ class LoginForm extends Component {
             password: '',
             buttonDisabled: false,
             is_hr: 0,
-            events: []
+            events: [],
+            user_id: ''
         }
     }
 
@@ -63,29 +63,26 @@ class LoginForm extends Component {
             });
 
             let result = await res.json()
-            console.log(result.data)
             if(result && result.data != null){
-                userStore.isLoggedIn = true;
-                userStore.username = result.data.name;
-                userStore.events = result.data.events;
-                userStore.is_hr = result.data.is_hr
+                sessionStorage.setItem('is_loggedin', true)
+                sessionStorage.setItem('username', result.data.name)
+                sessionStorage.setItem('events', result.data.events)
+                sessionStorage.setItem('is_hr', result.data.is_hr)
+                sessionStorage.setItem('user_id', result.data._id)
                 // alert(result.msg);
-                alert('BERHASIL')
+                alert('Redirecting..')
+                window.location.reload()
             }
             else if(result && result.data == null){
                 this.resetForm();
                 // alert(result.data);
-                alert('GAGAL')
+                alert('FAIL')
             }
         } catch (error) {
-            console.log(error);
             this.resetForm();
         }
     }
     render() {
-        const { characters } = this.state;
-        console.log(this.state.userName)
-        
         return (
             <div className="loginForm">
                Login Form

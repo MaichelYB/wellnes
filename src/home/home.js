@@ -1,33 +1,107 @@
 import React, { Component } from 'react';
 import InputEvent from './components/inputEvent';
 import userStore from '../store/userStore';
-import SubmitButton from './components/submitButton';
 import { parentURL } from '../global/constants';
-import {Dropdown} from 'react-bootstrap';
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { subDays } from 'date-fns'
+import setHours from "date-fns/setHours";
+import setMinutes from "date-fns/setMinutes";
 
 class Home extends Component {
     constructor(props){
       super(props);
       this.state = {
         eventName: '',
-        vendorName: '',
-        proposedDate1: '',
-        proposedDate2: '',
-        proposedDate3: '',
+        vendor: {},
+        hr: {},
+        proposedDate1: setHours(setMinutes(new Date(), 30), 16),
+        proposedDate2: setHours(setMinutes(new Date(), 30), 16),
+        proposedDate3: setHours(setMinutes(new Date(), 30), 16),
         proposedDates: [],
         status: 0,
-        dateCreated: ''
+        dateCreated: new Date(),
+        vendors: [],
+        selectedOption: 'None',
+        loading: false,
+        startDate: new Date(),
+        userStore: userStore,
+        location: ''
       }
+      this.addEvent = this.addEvent.bind(this);
     }
-    setInputValue(property, val){
-      this.setState({
-        [property]: val
+    
+    async componentWillMount() {
+      let res = await fetch(parentURL+'/vendors', {
+        method:'GET',
+        headers: {
+          'Accept': '*',
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept"
+        }
+      });
+      let result = await res.json();
+      result['data'].forEach(element => {
+        this.state.vendors.push(element);
+      });
+      this.setState({loading: true});
+    }
+
+    handleChange = (property, event) => {
+      const selectedIndex = event.target.options.selectedIndex;
+      this.setState({ 
+        vendor: {"id": event.target.options[selectedIndex].getAttribute('data-key'), "name": event.target.value},
+        hr: {"id": sessionStorage.getItem("user_id"), "name": sessionStorage.getItem("username")},
+        selectedOption: event.target.value
       });
     }
+
+    setStartDate = (event,i) => {
+      switch (i) {
+        case 1:
+          this.setState({ proposedDate1: new Date(event) });
+          break;
+        case 2:
+          this.setState({ proposedDate2: new Date(event) });
+          break;
+        case 3:
+          this.setState({ proposedDate3: new Date(event) });
+          break;
+        default:
+          break;
+      }
+    };
+
+    setInputValue(property, val){
+      this.setState({
+          [property]: val
+      });
+    }
+
+    resetForm() {
+      this.setState({
+        eventName: '',
+        vendor: {},
+        hr: {},
+        proposedDate1: setHours(setMinutes(new Date(), 30), 16),
+        proposedDate2: setHours(setMinutes(new Date(), 30), 16),
+        proposedDate3: setHours(setMinutes(new Date(), 30), 16),
+        proposedDates: [],
+        status: 0,
+        dateCreated: new Date(),
+        vendors: [],
+        selectedOption: 'None',
+        loading: false,
+        startDate: new Date(),
+        location: ''
+      });
+    }
+    
     async addEvent(){
-        this.setState({
-            buttonDisabled: true
-        });
+        // this.setState({
+        //     buttonDisabled: true
+        // });
         try {
             let res = await fetch(parentURL+'/createEvent', {
                 method: 'post',
@@ -39,70 +113,108 @@ class Home extends Component {
                 },
                 body: JSON.stringify({
                     eventName: this.state.eventName,
-                    vendorName: this.state.vendorName,
+                    vendor: this.state.vendor,
+                    hr: this.state.hr,
                     proposedDates: [this.state.proposedDate1, this.state.proposedDate2, this.state.proposedDate3],
                     status: 0,
-                    dateCreated: this.state.dateCreated
+                    confirmed: 0,
+                    dateCreated: this.state.dateCreated,
+                    confirmedDate: '',
+                    location: this.state.location
                 })
             });
 
             let result = await res.json()
-            console.log(result.data)
             if(result && result.data != null){
-                userStore.isLoggedIn = true;
-                userStore.username = result.data.name;
-                userStore.events = result.data.events;
-                userStore.is_hr = result.data.is_hr
                 // alert(result.msg);
-                alert('BERHASIL')
+                alert('Event Added')
+                window.location.replace('/')
             }
             else if(result && result.data == null){
                 this.resetForm();
                 // alert(result.data);
-                alert('GAGAL')
+                alert('Failed')
             }
         } catch (error) {
-            console.log(error);
             this.resetForm();
         }
     }
     render() {
-        const { characters } = this.state;
-        console.log(this.state.userName)
-        
-        return (
+        if(this.state.loading){
+          return (
             <div className="addEvent">
                Add Event
                <InputEvent
                 type='text'
                 placeholder='eventName'
-                value = ''
+                value = {this.state.eventName ? this.state.eventName : ''}
                 onChange = {(val) => this.setInputValue('eventName', val)}
                />
-               <Dropdown>
-                <Dropdown.Toggle variant="success" id="dropdown-basic">
-                  Dropdown Button
-                </Dropdown.Toggle>
-
-                <Dropdown.Menu>
-                  <Dropdown.Item href="#/action-1">Action</Dropdown.Item>
-                  <Dropdown.Item href="#/action-2">Another action</Dropdown.Item>
-                  <Dropdown.Item href="#/action-3">Something else</Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
+               <span>Select Vendor Name</span>
+               <select
+                value = {this.state.selectedOption}
+                placeholder='selectedOption'
+                onChange = {(val) => this.handleChange('selectedOption', val)}
+               >
+                 <option key='None' value='None' selected='true' disabled="disabled">Select Vendor Name</option>
+                 {this.state.vendors.map(({ _id, name }, index) => <option key={_id} data-key= {_id} value={name} >{name}</option>)}
+               </select>
+               <span>Select Location</span>
                <InputEvent
-                type='password'
-                placeholder='Password'
-                value = {this.state.password ? this.state.password : ''}
-                onChange = {(val) => this.setInputValue('password', val)}
+                type='text'
+                placeholder='location'
+                value = {this.state.location ? this.state.location : ''}
+                onChange = {(val) => this.setInputValue('location', val)}
                />
-               <InputEvent
-                text='Login'
-                disabled={this.state.buttonDisabled}
-                onClick={() => this.doLogin()}
+               {/* Date picker */}
+               Please fill proposed date 1 for the event
+               <DatePicker
+                selected={this.state.proposedDate1}
+                onChange={(date) => this.setStartDate(date, 1)}
+                minDate={subDays(new Date(), -1)}
+                placeholderText="Select a date"
+                showTimeSelect
+                dateFormat="MMMM d, yyyy h:mm aa"
                />
+               {/* <DatePicker
+                // onChange={(val) => this.handleChange('proposedDate1', val)}
+                minDate={subDays(new Date(), 0)}
+                placeholderText="Select a date"
+               /> */}
+               Please fill proposed date 2 for the event
+               <DatePicker
+                selected={this.state.proposedDate2}
+                onChange={(date) => this.setStartDate(date, 2)}
+                minDate={subDays(new Date(), -1)}
+                placeholderText="Select a date"
+                showTimeSelect
+                dateFormat="MMMM d, yyyy h:mm aa"
+               />
+               Please fill proposed date 3 for the event
+               <DatePicker
+                selected={this.state.proposedDate3}
+                onChange={(date) => this.setStartDate(date, 3)}
+                minDate={subDays(new Date(), -1)}
+                showTimeSelect
+                placeholderText="Select a date"
+                dateFormat="MMMM d, yyyy h:mm aa"
+               />
+               <div className="submit">
+               <button
+                    className = 'button'
+                    onClick = {this.addEvent}
+                >
+                Post Event
+                </button>
+              </div>
             </div>
-        );
+          );
+        }
+        else{
+          return (
+            <div>Please wait</div>
+          )
+        }
     }
 }
 

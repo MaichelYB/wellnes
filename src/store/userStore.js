@@ -10,7 +10,8 @@ class UserStore{
       isLoggedIn: false,
       username: '',
       events: [],
-      is_hr: 0
+      is_hr: 0,
+      user_id: ''
     })
   }
 }
